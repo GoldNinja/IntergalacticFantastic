@@ -8,11 +8,19 @@ import flixel.FlxSprite;
 import flixel.FlxState;
 import flixel.tile.FlxTilemap;
 import flixel.util.FlxMath;
+import flixel.util.FlxPoint;
 
 class PlayState extends FlxState
 {	private var player:Player;
 	private var level_floor:FlxTilemap;
 	private var level_walls:FlxTilemap;
+	
+	private var grain1:FlxSprite;
+	private var grain2:FlxSprite;
+	private var grain3:FlxSprite;
+	private var grainTimer:Float = 0.33;
+	private var grainState:Int = 1;
+
 	
 	private var _bullets:FlxGroup;
 	
@@ -45,7 +53,15 @@ class PlayState extends FlxState
 		FlxG.camera.follow(player);
 		FlxG.camera.deadzone.height = 70;
 		
-		//FlxG.timeScale = 0.5;
+		grain1 = new FlxSprite(0, 0, "assets/images/Grain_1.png");
+		grain2 = new FlxSprite(0, 0, "assets/images/Grain_2.png");
+		grain3 = new FlxSprite(0, 0, "assets/images/Grain_3.png");
+		add(grain1);
+		add(grain2);
+		add(grain3);
+		grain1.scrollFactor = grain2.scrollFactor = grain3.scrollFactor = new FlxPoint(0, 0);
+		//grain1.alpha = grain2.alpha = grain3.alpha = 0.2;
+		grain2.visible = grain3.visible = false;
 		
 		super.create();
 	}
@@ -56,7 +72,28 @@ class PlayState extends FlxState
 	}
 
 	override public function update():Void
-	{	super.update();
+	{	grainTimer -= FlxG.elapsed;
+		if (grainTimer < 0)
+		{	grainTimer = 0.27;
+			
+			switch (grainState) 
+			{	case 1:
+					grain3.visible = false;
+					grain1.visible = true;
+					grainState = 2;
+				case 2:
+					grain1.visible = false;
+					grain2.visible = true;
+					grainState = 3;
+				case 3:
+					grain2.visible = false;
+					grain3.visible = true;
+					grainState = 1; 
+			}
+		}
+		
+		
+		super.update();
 		FlxG.collide(player, level_walls);
 		FlxG.collide(_bullets, level_walls);
 	}	

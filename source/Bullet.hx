@@ -8,7 +8,7 @@ import flixel.animation.FlxAnimationController;
 
 class Bullet extends FlxSprite
 {	private var speed:Int = 600;
-	private var killTimer:Float = 5;
+	private var killTimer:Float = 2;
 
 	public function new():Void
 	{	super();

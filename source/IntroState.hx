@@ -2,6 +2,7 @@ package;
 /** @author Gold_Ninja */
 
 import flixel.group.FlxGroup;
+import flixel.util.FlxPoint;
 import openfl.Assets;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -19,7 +20,15 @@ class IntroState extends FlxState
 	private var door_t:FlxSprite;
 	private var door_b:FlxSprite;
 	private var hulk_inside:FlxSprite;		//Black sprite for inside
-	
+	private var timer:Float = 0;
+	private var timerTemp:Float = 0;
+	private var intro_state:Int = 0;
+	private var zGroup:FlxGroup;
+	private var grain1:FlxSprite;
+	private var grain2:FlxSprite;
+	private var grain3:FlxSprite;
+	private var grainTimer:Float = 0.33;
+	private var grainState:Int = 1;
 	
 	override public function create():Void
 	{	
@@ -39,36 +48,142 @@ class IntroState extends FlxState
 		add(ship_b);
 		ship_b.solid = false;
 		
-		ship_f.velocity.x = 120;
+		ship_f.velocity.x = 120;			// Maybe something like 90? or 60?
 		
 		bed = new Bed(ship_f.x + 52, ship_f.y + 48);
 		add(bed);
 		bed.solid = false;
 		
+		door_t = new FlxSprite(3628, 166, "assets/images/Intro_Door_T.png");
+		add(door_t);
+		door_b = new FlxSprite(3628, 256, "assets/images/Intro_Door_B.png");
+		add(door_b);
+		
 		FlxG.camera.follow(ship_f);
 		FlxG.camera.setBounds(0, 0, hulk_tiles.width, hulk_tiles.height, false);
 		FlxG.camera.followLerp = 1;
 		
+		zGroup = new FlxGroup(20);
+		add(zGroup);
+		zGroup.add(door_t);
+		zGroup.add(door_b);
+		zGroup.add(hulk_tiles);
+		zGroup.add(ship_f);
+		zGroup.add(ship_b);
+		zGroup.add(bed);
 		
-		
+		grain1 = new FlxSprite(0, 0, "assets/images/Grain_1.png");
+		grain2 = new FlxSprite(0, 0, "assets/images/Grain_2.png");
+		grain3 = new FlxSprite(0, 0, "assets/images/Grain_3.png");
+		add(grain1);
+		add(grain2);
+		add(grain3);
+		grain1.scrollFactor = grain2.scrollFactor = grain3.scrollFactor = new FlxPoint(0, 0);
+		grain1.alpha = grain2.alpha = grain3.alpha = 0.2;
+		grain2.visible = grain3.visible = false;
 		
 		
 		super.create();
 	}
 	
 	override public function update():Void
-	{	if (ship_f.x > 3679)
-		{	ship_f.velocity.x = 0;	}
+	{	timer += FlxG.elapsed;
 		
-		if (ship_f.velocity.x == 0 && ship_b.x < 3642)
-		{	ship_b.x += 0.5;	}
+		switch (intro_state) 
+		{	case 0:
+				if (ship_f.x > 3679)
+				{	ship_f.velocity.x = 0;
+					timerTemp = timer + 1;
+					intro_state += 1;	}
+					
+			case 1:
+				if (timer > timerTemp && ship_b.x < (ship_f.x - 37))
+				{	ship_b.x += 0.5;	}
+				if (ship_b.x == ship_f.x - 37)
+				{	timerTemp = timer + 2;
+					intro_state += 1;	}
+					
+			case 2:
+				if (timer > timerTemp)
+				{	intro_state += 1;
+					bed.animation.play("wake");	}
+				
+			case 3:
+				door_t.y -= 0.5;
+				door_b.y += 0.5;
+				
+				if (door_t.y == 90)
+				{	intro_state += 1;	}
+				
+			case 4:
+				intro_state += 1;
+				bed.animation.play("gun");
+				timerTemp = timer + 1.2;
+				
+			case 5:
+				if (timer > timerTemp)
+				{	intro_state += 1;
+					bed.animation.play("bed_open");
+					timerTemp = timer + 1.2;	}
+				
+			case 6:
+				if (timer > timerTemp)
+				{	intro_state += 1;
+					bed.animation.play("slide");	}			//Slightly darken ship so it look like it's going down.
+				
+			case 7:
+				var temp_bed = zGroup.members[5];
+				var temp_f = zGroup.members[3];
+				var temp_b = zGroup.members[4];
+				zGroup.members[5] = zGroup.members[2];
+				zGroup.members[4] = zGroup.members[1];
+				zGroup.members[3] = zGroup.members[0];
+				
+				zGroup.members[0] = temp_f;
+				zGroup.members[1] = temp_b;
+				zGroup.members[2] = temp_bed;
+				
+				intro_state += 1;
+				
+			case 8:
+				door_t.y += 0.5;
+				door_b.y -= 0.5;
+				if (door_t.y == 166)
+				{	intro_state += 1;
+					timerTemp = timer + 2; }
+				
+			case 9:
+				if (timer > timerTemp)
+				{	FlxG.switchState(new PlayState());	}
+				
+		}
 		
-		if (ship_b.x > 3641)
-		{	bed.animation.play("slide");	}
+		if (FlxG.keys.justReleased.ESCAPE)
+		{	FlxG.switchState(new PlayState());	}
+		
+		grainTimer -= FlxG.elapsed;
+		if (grainTimer < 0)
+		{	grainTimer = 0.27;
+			
+			switch (grainState) 
+			{	case 1:
+					grain3.visible = false;
+					grain1.visible = true;
+					grainState = 2;
+				case 2:
+					grain1.visible = false;
+					grain2.visible = true;
+					grainState = 3;
+				case 3:
+					grain2.visible = false;
+					grain3.visible = true;
+					grainState = 1; 
+			}
+		}
 		
 		
 		
-		//trace(ship_f.x);				//Makes it go real slow.
+		//trace (intro_state + " " + timerTemp + " " + timer);
 		
 		super.update();
 		if (ship_f.velocity.x > 0)
